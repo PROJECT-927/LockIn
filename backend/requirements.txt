@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-socketio[asyncio]
+opencv-python-headless
+numpy
+dlib
+ultralytics
+python-multipart
+aiofiles

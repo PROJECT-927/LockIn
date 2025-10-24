@@ -29,14 +29,6 @@ const StudentVideoFeed = () => {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
-        
-        //
-        // --- THIS IS THE KEY ---
-        // TODO: Tell your backend team this is where they
-        // must capture the 'stream' object and send it
-        // to their server (e.g., using WebRTC).
-        //
-        
       } catch (err) {
         console.error("Error accessing student's webcam:", err);
       }
@@ -106,7 +98,7 @@ export default function StudentExam() {
           Your camera is now active for proctoring.
         </p>
         <StudentVideoFeed />
-        {/* TODO: The actual exam questions/content would go here */}
+        {/* The actual exam questions/content would go here */}
       </div>
     </div>
   );
