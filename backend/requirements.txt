@@ -1,0 +1,13 @@
+flask>=2.0.0
+sounddevice>=0.4.5
+soundfile>=0.10.3
+numpy>=1.21.0
+scipy>=1.7.0
+SpeechRecognition>=3.8.1
+webrtcvad>=2.0.10
+textblob>=0.15.3
+python-dotenv>=0.19.0
+requests>=2.26.0
+pyttsx3>=2.90
+# Optional but recommended for better offline speech recognition
+pocketsphinx>=0.1.15
