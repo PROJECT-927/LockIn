@@ -1,23 +1,28 @@
-// src/pages/StudentLogin.jsx
 import React, { useState } from 'react';
-// I've corrected the import for FiKey. It's in 'fi', not 'fa'.
 import { FiUser, FiLock, FiKey } from 'react-icons/fi';
+import { useNavigate } from 'react-router-dom';
 
 const StudentLogin = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = (e) => {
-    e.preventDefault();
-    // TODO: Add real login logic
-    console.log('Attempting login with:', { username, password });
-    alert(`Login attempted!\nUsername: ${username}\nPassword: ${password}`);
-  };
+  e.preventDefault();
+
+  // For hackathon: Mock login
+  if (username === 'student@test.com' && password === 'password') {
+    console.log('Mock Student Login Successful');
+    navigate('/student-exam');
+  } else {
+    alert('Invalid credentials. (Use student@test.com / password)');
+  }
+};
 
   const styles = {
     appBackground: {
-      position: 'fixed', // cover full viewport
+      position: 'fixed',
       top: 0,
       left: 0,
       right: 0,

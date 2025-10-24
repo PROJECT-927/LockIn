@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard.jsx
-import React, { useState, useEffect, useRef } from 'react'; // Added useEffect and useRef
+import React, { useState, useEffect, useRef } from 'react';
 import {
   FiHome,
   FiClipboard,
@@ -11,68 +11,56 @@ import {
   FiSearch,
   FiAlertTriangle,
   FiAlertCircle,
+  FiX, // --- NEW --- Import close icon
 } from 'react-icons/fi';
 
 // --- NEW COMPONENT ---
-// This component handles the webcam feed.
-const LiveVideoFeed = () => {
-  const videoRef = useRef(null);
-  const styles = {
-    feedItem: {
-      position: 'relative',
-      borderRadius: '10px',
-      overflow: 'hidden',
-      height: '140px',
-      backgroundColor: '#000', // Black background
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-    },
-    video: {
-      width: '100%',
-      height: '100%',
-      objectFit: 'cover', // Ensures video fills the box
-    },
-    feedOverlay: {
-      position: 'absolute',
-      bottom: '10px',
-      left: '10px',
-      padding: '3px 8px',
-      borderRadius: '15px',
-      fontSize: '12px',
-      fontWeight: '600',
-      color: 'white',
-      backgroundColor: '#00cc00', // Green "ONLINE"
-    },
-  };
-
-  useEffect(() => {
-    // Get user's webcam
-    const getVideoStream = async () => {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-        // TODO: When backend is ready, start sending frames from here
-      } catch (err) {
-        console.error('Error accessing webcam:', err);
-      }
-    };
-
-    getVideoStream();
-
-    // Clean up
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
-      }
-    };
-  }, []);
-
+// This is the popup modal for student details.
+const StudentDetailModal = ({ student, onClose, styles }) => {
   return (
-    <div style={styles.feedItem}>
-      <video ref={videoRef} autoPlay playsInline muted style={styles.video} />
-      <span style={styles.feedOverlay}>LIVE</span>
+    // Modal Backdrop
+    <div style={styles.modalBackdrop} onClick={onClose}>
+      {/* Modal Content */}
+      <div style={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+        {/* Modal Header */}
+        <div style={styles.modalHeader}>
+          <h2 style={styles.modalTitle}>Student Details: {student.name}</h2>
+          <button style={styles.modalCloseButton} onClick={onClose}>
+            <FiX />
+          </button>
+        </div>
+        
+        {/* Modal Body */}
+        <div style={styles.modalBody}>
+          <div style={styles.modalSection}>
+            <h3 style={styles.modalSectionTitle}>Live Feed</h3>
+            {/* This is just a placeholder. The backend would stream the
+                full-size video here instead of the thumbnail. */}
+            <div
+              style={{
+                ...styles.feedItem,
+                height: '300px',
+                backgroundImage: `url('${student.img}')`,
+              }}
+            />
+          </div>
+          <div style={styles.modalSection}>
+            <h3 style={styles.modalSectionTitle}>Focus Statistics</h3>
+            <p style={styles.modalStat}>
+              <strong>Current Score:</strong> {student.focusScore}%
+            </p>
+            <p style={styles.modalStat}>
+              <strong>Status:</strong> {student.status}
+            </p>
+            <p style={styles.modalStat}>
+              <strong>Alerts Triggered:</strong> {student.alerts}
+            </p>
+            <p style={styles.modalStat}>
+              <strong>Time Away from Screen:</strong> {student.timeAway}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -80,39 +68,36 @@ const LiveVideoFeed = () => {
 
 const AdminDashboard = () => {
   const [activeNav, setActiveNav] = useState('Exams');
+  const [focusScore, setFocusScore] = useState(85); // Overall average score
+  
+  // --- NEW --- State for the selected student
+  const [selectedStudent, setSelectedStudent] = useState(null);
 
-  // --- NEW DYNAMIC STATE ---
-  const [focusScore, setFocusScore] = useState(85);
   const [alerts, setAlerts] = useState([
-    // Pre-populate with your static alerts
     {
       id: 1,
-      time: new Date().toLocaleTimeString(),
+      time: '14:30:05',
       color: '#D9534F',
       Icon: FiAlertTriangle,
       text: 'Student #12: Unauthorized Device Detected',
     },
     {
       id: 2,
-      time: new Date().toLocaleTimeString(),
+      time: '14:30:12',
       color: '#F0AD4E',
       Icon: FiAlertCircle,
-      text: 'Student ID 448: Low Attention - Eye Movement',
+      text: 'Student ID 448: Low Attention',
     },
   ]);
 
-  // --- MOCK DATA SIMULATOR ---
   useEffect(() => {
     const mockDataInterval = setInterval(() => {
-      // 1. Update Focus Score
       setFocusScore((prevScore) => {
-        const change = Math.random() * 10 - 5; // Change between -5 and +5
+        const change = Math.random() * 10 - 5;
         const newScore = Math.round(prevScore + change);
-        return Math.min(100, Math.max(0, newScore)); // Clamp between 0 and 100
+        return Math.min(100, Math.max(0, newScore));
       });
-
-      // 2. Randomly add a new alert
-      if (Math.random() < 0.2) { // 20% chance to add an alert
+      if (Math.random() < 0.2) {
         const newAlert = {
           id: Date.now(),
           time: new Date().toLocaleTimeString(),
@@ -120,18 +105,15 @@ const AdminDashboard = () => {
           Icon: FiAlertTriangle,
           text: `New Alert: Student ${Math.floor(Math.random() * 100)} is AFK`,
         };
-        
-        // Add new alert to the top, keep only the 5 most recent
         setAlerts((prevAlerts) => [newAlert, ...prevAlerts].slice(0, 5));
       }
-    }, 2500); // Update every 2.5 seconds
-
-    // Clean up interval on unmount
+    }, 2500);
     return () => clearInterval(mockDataInterval);
-  }, []); // Empty dependency array so it only runs once
-  // --- END OF MOCK DATA SIMULATOR ---
+  }, []);
 
   const styles = {
+    // --- (All your existing styles are here) ---
+    // ... (appBackground, dashboardCard, sidebar, etc.) ...
     appBackground: {
       minHeight: '100vh',
       display: 'flex',
@@ -155,6 +137,7 @@ const AdminDashboard = () => {
       display: 'grid',
       gridTemplateColumns: '220px 1fr',
       overflow: 'hidden',
+      position: 'relative', // --- NEW --- Added for modal positioning
     },
     sidebar: {
       padding: '25px 0',
@@ -245,6 +228,13 @@ const AdminDashboard = () => {
       backgroundColor: '#e0e0e0',
       backgroundSize: 'cover',
       backgroundPosition: 'center',
+      cursor: 'pointer', // --- NEW --- Make it clickable
+      transition: 'transform 0.2s ease, box-shadow 0.2s ease', // --- NEW ---
+    },
+    // --- NEW --- Style for feed item on hover
+    feedItemHover: {
+      transform: 'scale(1.03)',
+      boxShadow: '0 8px 20px rgba(0, 0, 0, 0.1)',
     },
     feedOverlay: {
       position: 'absolute',
@@ -255,8 +245,13 @@ const AdminDashboard = () => {
       fontSize: '12px',
       fontWeight: '600',
       color: 'white',
-      backgroundColor: '#00cc00',
+      backgroundColor: 'rgba(0, 204, 0, 0.8)', // Made slightly transparent
     },
+    // --- NEW --- Red overlay for alerts
+    feedOverlayAlert: {
+      backgroundColor: 'rgba(217, 83, 79, 0.8)',
+    },
+    // --- (Other styles like scorePanel, doughnutChart, etc. are here) ---
     scorePanel: {
       display: 'flex',
       flexDirection: 'column',
@@ -347,16 +342,81 @@ const AdminDashboard = () => {
       backgroundColor: '#4a70f0',
       borderRadius: '3px',
     }),
-    // Style for the alert's timestamp
     alertTime: {
       fontSize: '11px',
       color: '#888',
       display: 'block',
       marginTop: '2px',
-    }
+    },
+    
+    // --- NEW MODAL STYLES ---
+    modalBackdrop: {
+      position: 'absolute', // Positioned relative to dashboardCard
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      backdropFilter: 'blur(5px)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 1000,
+    },
+    modalContent: {
+      width: '700px',
+      maxWidth: '90%',
+      backgroundColor: 'white',
+      borderRadius: '15px',
+      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
+      overflow: 'hidden',
+    },
+    modalHeader: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      padding: '15px 25px',
+      borderBottom: '1px solid #eee',
+    },
+    modalTitle: {
+      fontSize: '18px',
+      fontWeight: '600',
+      color: '#333',
+    },
+    modalCloseButton: {
+      background: 'transparent',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '24px',
+      color: '#888',
+    },
+    modalBody: {
+      padding: '25px',
+      display: 'grid',
+      gridTemplateColumns: '1fr 1fr',
+      gap: '25px',
+    },
+    modalSection: {
+      // styles for the sections inside the modal
+    },
+    modalSectionTitle: {
+      fontSize: '16px',
+      fontWeight: '600',
+      color: '#333366',
+      borderBottom: '2px solid #eef2ff',
+      paddingBottom: '5px',
+      marginBottom: '15px',
+    },
+    modalStat: {
+      fontSize: '14px',
+      color: '#555',
+      marginBottom: '10px',
+    },
+    // --- END OF NEW STYLES ---
   };
 
   const FocusScoreDoughnut = ({ score }) => {
+    // ... (no changes here)
     const radius = 50;
     const circumference = 2 * Math.PI * radius;
     const offset = circumference - (score / 100) * circumference;
@@ -366,70 +426,89 @@ const AdminDashboard = () => {
     return (
       <div style={styles.doughnutChartContainer}>
         <svg viewBox="0 0 120 120" style={styles.doughnutSvg}>
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke={trackColor}
-            strokeWidth="10"
-          />
-          <circle
-            cx="60"
-            cy="60"
-            r={radius}
-            fill="none"
-            stroke={strokeColor}
-            strokeWidth="10"
-            strokeDasharray={circumference}
-            strokeDashoffset={offset}
-            strokeLinecap="round"
-          />
+          <circle cx="60" cy="60" r={radius} fill="none" stroke={trackColor} strokeWidth="10" />
+          <circle cx="60" cy="60" r={radius} fill="none" stroke={strokeColor} strokeWidth="10" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" />
         </svg>
         <span style={styles.scoreText}>{score}%</span>
       </div>
     );
   };
 
-  const NavItem = ({ name, icon: Icon }) => (
-    <div style={styles.navItem(name)} onClick={() => setActiveNav(name)}>
-      <Icon style={styles.navIcon} />
-      <span>{name}</span>
-    </div>
-  );
+  const NavItem = ({ name, icon: Icon }) => {
+    // ... (no changes here)
+    return (
+      <div style={styles.navItem(name)} onClick={() => setActiveNav(name)}>
+        <Icon style={styles.navIcon} />
+        <span>{name}</span>
+      </div>
+    );
+  };
 
-  // Static placeholder feeds for #2, 3, 4
+  // --- MODIFIED --- Added more mock data for the modal
   const placeholderFeeds = [
-    { name: 'Student 2', img: 'https://i.imgur.com/G3t7jYJ.png', status: 'ONLINE' },
-    { name: 'Student 3', img: 'https://i.imgur.com/G3t7jYJ.png', status: 'ONLINE' },
-    { name: 'Student 4', img: 'https://i.imgur.com/G3t7jYJ.png', status: 'ONLINE' },
+    {
+      id: 1,
+      name: 'Student #12',
+      img: 'https://i.imgur.com/G3t7jYJ.png',
+      status: 'ALERT',
+      focusScore: 45,
+      alerts: 3,
+      timeAway: '1m 12s',
+    },
+    {
+      id: 2,
+      name: 'Student #448',
+      img: 'https://i.imgur.com/G3t7jYJ.png',
+      status: 'ONLINE',
+      focusScore: 88,
+      alerts: 1,
+      timeAway: '0m 05s',
+    },
+    {
+      id: 3,
+      name: 'Student #301',
+      img: 'https://i.imgur.com/G3t7jYJ.png',
+      status: 'ONLINE',
+      focusScore: 92,
+      alerts: 0,
+      timeAway: '0m 02s',
+    },
+    {
+      id: 4,
+      name: 'Student #55',
+      img: 'https://i.imgur.com/G3t7jYJ.png',
+      status: 'ONLINE',
+      focusScore: 76,
+      alerts: 0,
+      timeAway: '0m 15s',
+    },
   ];
 
+  // --- (No changes to recentActivity or ongoingExams) ---
   const recentActivity = [
     { text: 'Searched student feeds', time: '4:00 AM', detail: '' },
     { text: 'Cooked #fixed', time: '4:00 AM', detail: '90%' },
     { text: 'Tepoasoild Bic', time: '3:50 AM', detail: '30%' },
   ];
-
   const ongoingExams = [
-    {
-      time: '9:00 AM',
-      title: 'Calculus I',
-      subtitle: 'Veasmed Imiqit',
-      progress: 83,
-    },
-    {
-      time: '11:00 AM',
-      title: 'World History',
-      subtitle: 'Venvic Exams',
-      progress: 60,
-    },
+    { time: '9:00 AM', title: 'Calculus I', subtitle: 'Veasmed Imiqit', progress: 83 },
+    { time: '11:00 AM', title: 'World History', subtitle: 'Venvic Exams', progress: 60 },
   ];
 
   return (
     <div style={styles.appBackground}>
       <div style={styles.dashboardCard}>
+        {/* --- NEW --- Render the modal if a student is selected */}
+        {selectedStudent && (
+          <StudentDetailModal
+            student={selectedStudent}
+            onClose={() => setSelectedStudent(null)}
+            styles={styles}
+          />
+        )}
+
         <aside style={styles.sidebar}>
+          {/* ... (no changes here) ... */}
           <div style={styles.logo}>LockIN</div>
           <NavItem name="Home" icon={FiHome} />
           <NavItem name="Exams" icon={FiClipboard} />
@@ -440,6 +519,7 @@ const AdminDashboard = () => {
 
         <main style={styles.mainContent}>
           <header style={styles.header}>
+            {/* ... (no changes here) ... */}
             <FiSearch style={styles.headerIcon} />
             <FiBell style={styles.headerIcon} />
             <FiUser style={styles.headerIcon} />
@@ -450,45 +530,43 @@ const AdminDashboard = () => {
               <div style={styles.panel}>
                 <h3 style={styles.panelTitle}>LIVE STUDENT FEEDS</h3>
                 <div style={styles.feedsGrid}>
-                  {/* --- MODIFICATION --- */}
-                  {/* The first feed is now the live webcam */}
-                  <LiveVideoFeed />
-
-                  {/* The other 3 are placeholders */}
+                  {/* --- MODIFIED --- Feeds are now clickable */}
                   {placeholderFeeds.map((feed, index) => (
                     <div
-                      key={index}
+                      key={feed.id}
                       style={{
                         ...styles.feedItem,
                         backgroundImage: `url('${feed.img}')`,
                       }}
+                      onClick={() => setSelectedStudent(feed)} // --- THIS IS THE CLICK HANDLER
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = styles.feedItemHover.transform)}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
                     >
-                      <span style={styles.feedOverlay}>{feed.status}</span>
+                      <span
+                        style={{
+                          ...styles.feedOverlay,
+                          // --- NEW --- Show red overlay if status is 'ALERT'
+                          ...(feed.status === 'ALERT'
+                            ? styles.feedOverlayAlert
+                            : {}),
+                        }}
+                      >
+                        {feed.name} - {feed.focusScore}%
+                      </span>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* ... (no changes to other panels) ... */}
               <div style={{ ...styles.panel, paddingBottom: '10px' }}>
                 <h3 style={styles.panelTitle}>#REECIS</h3>
                 <div>
                   {recentActivity.map((item, index) => (
-                    <div
-                      key={index}
-                      style={{
-                        ...styles.listItem(),
-                        borderBottom:
-                          index < recentActivity.length - 1
-                            ? styles.listItem().borderBottom
-                            : 'none',
-                      }}
-                    >
+                    <div key={index} style={{ ...styles.listItem(), borderBottom: index < recentActivity.length - 1 ? styles.listItem().borderBottom : 'none' }}>
                       <FiSearch style={styles.listIcon} />
                       <span>{item.text}</span>
-                      <span style={styles.listDetail}>
-                        {item.time}
-                        {item.detail && ` | ${item.detail}`}
-                      </span>
+                      <span style={styles.listDetail}>{item.time}{item.detail && ` | ${item.detail}`}</span>
                     </div>
                   ))}
                 </div>
@@ -497,12 +575,7 @@ const AdminDashboard = () => {
               <div style={{ ...styles.panel, paddingBottom: '10px' }}>
                 <h3 style={styles.panelTitle}>CAACUING LAMS</h3>
                 <div>
-                  <div
-                    style={{
-                      ...styles.listItem(),
-                      borderBottom: styles.listItem().borderBottom,
-                    }}
-                  >
+                  <div style={{ ...styles.listItem(), borderBottom: styles.listItem().borderBottom }}>
                     <FiClipboard style={styles.listIcon} />
                     <span>World History</span>
                     <span style={styles.listDetail}>1:00 AM</span>
@@ -518,83 +591,49 @@ const AdminDashboard = () => {
 
             <div>
               <div style={{ ...styles.panel, ...styles.scorePanel }}>
-                <h3 style={styles.panelTitle}>FOCUS/ATTENTION SCORES</h3>
-                {/* --- MODIFICATION --- */}
-                {/* Score is now dynamic */}
+                <h3 style={styles.panelTitle}>OVERALL FOCUS SCORE</h3>
                 <FocusScoreDoughnut score={focusScore} />
                 <p style={{ fontSize: '14px', color: '#555', marginTop: '10px' }}>
-                  {focusScore}% overall focus score.
+                  {focusScore}% average focus.
                 </p>
               </div>
 
               <div style={styles.panel}>
                 <h3 style={styles.panelTitle}>ALERTS</h3>
-                {/* --- MODIFICATION --- */}
-                {/* Alerts are now mapped from dynamic state */}
                 {alerts.length === 0 && (
-                  <p style={{fontSize: '14px', color: '#888'}}>No alerts yet.</p>
+                  <p style={{ fontSize: '14px', color: '#888' }}>No alerts yet.</p>
                 )}
                 {alerts.map((alert) => (
                   <div key={alert.id} style={styles.listItem(alert.color)}>
                     <alert.Icon style={styles.alertIcon(alert.color)} />
                     <div>
-                      <span style={styles.alertText(alert.color)}>
-                        {alert.text}
-                      </span>
+                      <span style={styles.alertText(alert.color)}>{alert.text}</span>
                       <span style={styles.alertTime}>{alert.time}</span>
                     </div>
                   </div>
                 ))}
               </div>
-
+              
+              {/* ... (no changes to ongoing exams panel) ... */}
               <div style={styles.panel}>
                 <h3 style={styles.panelTitle}>ONGOING EXAMS</h3>
                 {ongoingExams.map((exam, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      ...styles.examItem,
-                      borderBottom:
-                        index < ongoingExams.length - 1
-                          ? styles.examItem.borderBottom
-                          : 'none',
-                    }}
-                  >
+                  <div key={index} style={{ ...styles.examItem, borderBottom: index < ongoingExams.length - 1 ? styles.examItem.borderBottom : 'none' }}>
                     <div style={styles.examDetails}>
                       <span style={styles.examTime}>{exam.time}</span>
                       <span style={styles.examPercentage}>{exam.progress}%</span>
                     </div>
-                    <div
-                      style={{
-                        fontSize: '13px',
-                        color: '#888',
-                        marginBottom: '5px',
-                      }}
-                    >
+                    <div style={{ fontSize: '13px', color: '#888', marginBottom: '5px' }}>
                       {exam.title} | {exam.subtitle}
                     </div>
-
                     <div style={styles.progressBarContainer}>
                       <div style={styles.progressBar(exam.progress)}></div>
                     </div>
                   </div>
                 ))}
-
-                <div
-                  style={{
-                    marginTop: '15px',
-                    paddingTop: '10px',
-                    borderTop: '1px solid #f0f0f0',
-                  }}
-                >
+                <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px solid #f0f0f0' }}>
                   <div style={styles.examDetails}>
-                    <span
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: '500',
-                        color: '#444',
-                      }}
-                    >
+                    <span style={{ fontSize: '14px', fontWeight: '500', color: '#444' }}>
                       Active students
                     </span>
                     <span style={styles.examPercentage}>20%</span>

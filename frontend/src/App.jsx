@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import StudentLogin from './pages/StudentLogin'
 import AdminLogin from './pages/AdminLogin'
 import AdminDashboard from './pages/AdminDashboard'
+import StudentExam from './pages/StudentExam';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Route path="/student-login" element={<StudentLogin />} />
       <Route path="/admin-login" element={<AdminLogin />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
+      <Route path="/student-exam" element={<StudentExam />} />
     </Routes>
     // We REMOVED the wrapper </div> from here
   )
