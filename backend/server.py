@@ -1,7 +1,6 @@
 # backend/server.py
 import eventlet
-eventlet.monkey_patch() # Essential for Socket.IO + Flask performance
-
+eventlet.monkey_patch() 
 from flask import Flask, request, send_from_directory
 from flask_socketio import SocketIO, emit, join_room, leave_room
 import time
@@ -226,8 +225,8 @@ def on_video_frame(data):
         if looking_away_start_time is None: student_data["looking_away_start_time"] = time.time(); student_data["looking_away_alerted"] = False; print(f"DEBUG [Video]: {student_id} timer started (Looking Away).")
         else:
              elapsed = time.time() - looking_away_start_time
-             if elapsed > 5.0 and not student_data.get("looking_away_alerted"):
-                  print(f"DEBUG [Video]: {student_id} exceeded 5.0s threshold.")
+             if elapsed > 2.0 and not student_data.get("looking_away_alerted"):
+                  print(f"DEBUG [Video]: {student_id} exceeded 2.0s threshold.")
                   current_score = student_data["score"]; penalty = analysis.get("score_penalty", 0)
                   new_score = max(0, current_score - penalty)
                   if new_score != current_score: student_data["score"] = new_score; score_updated = True
@@ -239,7 +238,7 @@ def on_video_frame(data):
 
     # Handle OTHER alerts
     alert_message = analysis.get("alert")
-    if alert_message and not is_looking_away and not alert_triggered_this_frame:
+    if alert_message and  not alert_triggered_this_frame:
         current_score = student_data["score"]; penalty = analysis.get("score_penalty", 0)
         new_score = max(0, current_score - penalty)
         if new_score != current_score: student_data["score"] = new_score; score_updated = True

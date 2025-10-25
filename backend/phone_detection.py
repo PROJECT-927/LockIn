@@ -105,7 +105,7 @@ def analyze_phone_frame(image_bgr, student_id):
                 # Timer exceeded, trigger the main alert
                 print(f"[{student_id}] Exceeded {PHONE_ALERT_THRESHOLD_SECONDS}s phone threshold.")
                 status = "CRITICAL: Phone Detected"
-                alert = f"Phone visible for > {int(PHONE_ALERT_THRESHOLD_SECONDS)} seconds."
+                alert = f"Phone Detected."
                 score_penalty = 25 # Assign a penalty
                 state["phone_alerted"] = True # Mark as alerted
             elif state["phone_alerted"]:

@@ -9,16 +9,16 @@ const StudentLogin = () => {
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  // For hackathon: Mock login
-  if (username === 'student@test.com' && password === 'password') {
-    console.log('Mock Student Login Successful');
-    navigate('/student-exam');
-  } else {
-    alert('Invalid credentials. (Use student@test.com / password)');
-  }
-};
+    // For hackathon: Mock login
+    if (username === 'student@test.com' && password === 'password') {
+      console.log('Mock Student Login Successful');
+      navigate('/student-exam');
+    } else {
+      alert('Invalid credentials. (Use student@test.com / password)');
+    }
+  };
 
   const styles = {
     appBackground: {
@@ -139,7 +139,17 @@ const StudentLogin = () => {
       alignSelf: 'flex-start',
       marginLeft: '5px',
       transition: 'color 0.2s',
-      marginBottom: '20px',
+      marginBottom: '10px', // Reduced margin
+    },
+    adminLoginLink: { // NEW STYLE for the Admin Login link
+      fontSize: '13px',
+      color: '#6f5edc', // A slightly different color for distinction
+      textDecoration: 'underline',
+      fontWeight: '600',
+      alignSelf: 'flex-start',
+      marginLeft: '5px',
+      cursor: 'pointer',
+      marginTop: '10px', // Space above it
     },
     illustrationContainer: {
       width: '300px',
@@ -169,10 +179,14 @@ const StudentLogin = () => {
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        style={styles.input}
-      />
+        style={styles.input} />
     </div>
   );
+
+  const handleAdminNavigation = (e) => {
+    e.preventDefault();
+    navigate('/admin-login'); // Navigates to the Admin Login page
+  };
 
   return (
     <div style={styles.appBackground}>
@@ -180,29 +194,29 @@ const StudentLogin = () => {
         {/* Form Section */}
         <div style={styles.formContainer}>
           {/* LockIN Logo */}
-<div style={styles.logoContainer}>
-  <span style={styles.logoText}>L</span>
-  <div
-    style={{
-      width: '40px',
-      height: '40px',
-      borderRadius: '50%',
-      background: 'linear-gradient(135deg, #4a70f0 0%, #6f5edc 100%)', // gradient background
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      boxShadow: '0 4px 12px rgba(0,0,0,0.15)', // subtle shadow
-      margin: '0 4px',
-      transition: 'transform 0.3s ease', // smooth hover effect
-      cursor: 'pointer',
-    }}
-    onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
-    onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
-  >
-    <FiLock style={{ color: 'white', fontSize: '24px' }} /> {/* slightly bigger icon */}
-  </div>
-  <span style={styles.logoText}>ckIN</span>
-</div>
+          <div style={styles.logoContainer}>
+            <span style={styles.logoText}>L</span>
+            <div
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #4a70f0 0%, #6f5edc 100%)', // gradient background
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)', // subtle shadow
+                margin: '0 4px',
+                transition: 'transform 0.3s ease', // smooth hover effect
+                cursor: 'pointer',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+            >
+              <FiLock style={{ color: 'white', fontSize: '24px' }} /> {/* slightly bigger icon */}
+            </div>
+            <span style={styles.logoText}>ckIN</span>
+          </div>
 
 
           <h2 style={styles.subtitle}>STUDENT LOGIN</h2>
@@ -251,6 +265,17 @@ const StudentLogin = () => {
           >
             Forgot Password?
           </a>
+          
+          {/* NEW ADMIN LOGIN LINK */}
+          <a
+            href="#"
+            style={styles.adminLoginLink}
+            onClick={handleAdminNavigation}
+          >
+            <FiKey style={{ marginRight: '5px', transform: 'translateY(1px)' }} />
+            Log in as Admin
+          </a>
+          {/* END NEW ADMIN LOGIN LINK */}
         </div>
 
         {/* Illustration Section */}

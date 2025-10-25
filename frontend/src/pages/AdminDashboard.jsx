@@ -231,18 +231,33 @@ const AdminDashboard = () => {
           setSelectedStudent(prevId => (prevId === data.student_id ? null : prevId));
       }
     });
+
     socketRef.current.on('student_update', (data) => {
-       // Only update if the student exists in our state
-       if (data && data.student_id && students[data.student_id]) {
-           setStudents(prev => ({
-                ...prev,
-                // Merge new data, ensuring existing fields not in 'data' are kept
-                [data.student_id]: { ...prev[data.student_id], ...data }
-           }));
-       } else if (data && data.student_id) {
-            console.log("Received update for unknown student:", data.student_id); // Log if update is for someone not listed
-       }
+       // 'data' IS the student object, e.g., { id: 'student1', score: 95, ... }
+       
+       // 1. Check if the data payload has an 'id' field
+       if (!data || !data.id) return; 
+
+       const studentId = data.id; // 2. The key is data.id
+
+       setStudents(prevStudents => {
+            // 3. Check if that student exists in our *current* state
+            if (prevStudents[studentId]) {
+                // 4. Return the new state object
+                return {
+                    ...prevStudents,
+                    // 5. Merge the new 'data' object with the existing student data
+                    [studentId]: { ...prevStudents[studentId], ...data }
+                };
+            } else {
+                // This student isn't in our list yet, ignore the update
+                // (The 'new_student' event will handle adding them)
+                return prevStudents; 
+            }
+       });
     });
+
+
     socketRef.current.on('new_alert', (alert) => {
         console.log("New alert:", alert);
         if (alert && alert.id) {
@@ -263,12 +278,22 @@ const AdminDashboard = () => {
                  }
              }
              // Update student snapshot state if alert includes one (used by normal modal)
+            // Update student snapshot state if alert includes one (used by normal modal)
              if(alertData.snapshot && alertData.text) {
                  const studentIdMatch = alertData.text.match(/^([^:]+):/);
-                 // Check student exists before trying to update snapshot
-                 if (studentIdMatch && studentIdMatch[1] && students[studentIdMatch[1]]) {
+                 if (studentIdMatch && studentIdMatch[1]) {
                      const studentId = studentIdMatch[1];
-                      setStudents(prev => ({ ...prev, [studentId]: { ...prev[studentId], snapshot: alertData.snapshot } }));
+                     
+                     // Use the functional update to get the *current* state
+                     setStudents(prevStudents => {
+                          // Move the check INSIDE
+                          if (prevStudents[studentId]) {
+                              // Return the new state
+                              return { ...prevStudents, [studentId]: { ...prevStudents[studentId], snapshot: alertData.snapshot } };
+                          }
+                          // Return state unchanged if student not found
+                          return prevStudents;
+                     });
                  }
              }
         }
