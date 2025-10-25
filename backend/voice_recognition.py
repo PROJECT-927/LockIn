@@ -1,5 +1,3 @@
-#
-from flask import Flask, jsonify, send_from_directory, request
 import threading
 import sounddevice as sd
 import soundfile as sf
@@ -9,25 +7,14 @@ import os
 import speech_recognition as sr
 import time
 import json
-import glob
 from queue import Queue, Empty
 from collections import defaultdict, deque
 import re
 import hashlib
 
-# Optional imports
-try:
-    from textblob import TextBlob
-    NLP_AVAILABLE = True
-except:
-    NLP_AVAILABLE = False
-
 # ---------------- SPEED-OPTIMIZED CONFIG ----------------
 SAMPLE_RATE = 16000
-DURATION = 5  # Shorter for speed
-OVERLAP = 0  # No overlap for speed
-
-# Relaxed thresholds for speed
+DURATION = 5 # seconds per chunk
 ENERGY_THRESHOLD = 0.008
 SPEECH_CONFIDENCE_THRESHOLD = 0.5
 
@@ -35,9 +22,10 @@ SPEECH_CONFIDENCE_THRESHOLD = 0.5
 SUSPICION_THRESHOLD = 12
 CRITICAL_THRESHOLD = 25
 
-# Speed-optimized keywords (only high-risk)
+# Speed-optimized keywords
 KEYWORDS = {
-     "answer": 10, "answers": 10, "solution": 10, "solutions": 10,
+   # High risk (weight: 10)
+    "answer": 10, "answers": 10, "solution": 10, "solutions": 10,
     
     # Medium-high risk (weight: 7)
     "question": 7, "help": 7, "tell": 7, "google": 7, "search": 7,
@@ -49,12 +37,15 @@ KEYWORDS = {
     
     # Lower risk but contextual (weight: 3)
     "what": 3, "how": 3, "why": 3, "send": 3, "give": 3,
-    "show": 3, "find": 3, "check": 3
+    "show": 3, "find": 3, "check": 3, "define": 3,
+    "explain": 3,
+    "list": 3,
+    "name": 3,
 }
 
 # Fast pattern matching
 PATTERNS = [
-    (r"what\s+is\s+the\s+(answer|solution)", 15),
+   (r"what\s+is\s+the\s+(answer|solution)", 15),
     (r"question\s+(number\s+)?\d+", 12),
     (r"option\s+[a-d]", 10),
     (r"help\s+me\s+(with|solve|answer)", 12),
@@ -66,6 +57,7 @@ PATTERNS = [
     (r"what\s+does\s+.{5,30}\s+mean", 7),
     (r"how\s+do\s+(i|you)\s+(calculate|solve|find)", 12),
     (r"(alexa|siri|hey\s+google)", 15),
+
 ]
 
 SAVE_PATH = os.path.abspath("suspicious_audio")
@@ -76,11 +68,9 @@ os.makedirs(SAVE_PATH, exist_ok=True)
 os.makedirs(TEMP_DIR, exist_ok=True)
 
 # ---------------- GLOBALS ----------------
-app = Flask(__name__)
 start_time = time.time()
 audio_queue = Queue(maxsize=10)
 log_buffer = []
-log_lock = threading.Lock()
 is_running = threading.Event()
 is_running.set()
 
@@ -177,10 +167,16 @@ def log_event(event_type, text="", filename=None, metadata=None):
         "metadata": metadata or {}
     }
     
-    with log_lock:
-        log_buffer.append(entry)
-        if len(log_buffer) > 300:
-            log_buffer.pop(0)
+    log_buffer.append(entry)
+    if len(log_buffer) > 300:
+        log_buffer.pop(0)
+    
+    # Auto-save logs
+    try:
+        with open(LOG_FILE, 'w') as f:
+            json.dump(log_buffer, f, indent=2)
+    except:
+        pass
 
 def save_audio_fast(audio, label):
     """Fast audio saving"""
@@ -197,7 +193,6 @@ def save_audio_fast(audio, label):
 # ---------------- RECORDER ----------------
 def recorder_thread():
     """Speed-optimized recorder"""
-    print("🎙️  Recorder started")
     device = sd.default.device[0]
     
     while is_running.is_set():
@@ -221,15 +216,13 @@ def recorder_thread():
                     pass  # Skip if queue full
                     
         except Exception as e:
-            print(f"Record error: {e}")
             time.sleep(0.5)
     
-    print("🛑 Recorder stopped")
+    print("Recorder stopped")
 
 # ---------------- PROCESSOR ----------------
 def processor_thread():
     """Speed-optimized processor"""
-    print("⚙️  Processor started")
     
     while is_running.is_set():
         try:
@@ -264,8 +257,6 @@ def processor_thread():
         if is_duplicate_fast(text):
             continue
         
-        print(f"💬 {text}")
-        
         # Analyze
         analysis = analyze_fast(text)
         score = analysis["score"]
@@ -285,8 +276,7 @@ def processor_thread():
             
             if filename:
                 log_event("suspicious", text, filename, analysis)
-                print(f"🚨 ALERT (Risk: {score}) - {filename}")
-                print(f"   Keywords: {', '.join(analysis['keywords'])}")
+                print(f"Risk: {score} - Suspicious recorded")
         else:
             log_event("speech", text, metadata=analysis)
         
@@ -297,148 +287,19 @@ def processor_thread():
             "score": score
         })
     
-    print("🛑 Processor stopped")
+    print("Processor stopped")
 
-# ---------------- API ROUTES ----------------
-@app.route("/")
-def home():
-    return jsonify({
-        "message": "High-Speed Voice Proctor",
-        "status": "active" if is_running.is_set() else "stopped",
-        "version": "SPEED-1.0"
-    })
-
-@app.route("/status")
-def status():
-    files = [f for f in os.listdir(SAVE_PATH) if f.endswith('.wav')]
-    uptime = int(time.time() - start_time)
-    
-    return jsonify({
-        "active": is_running.is_set(),
-        "uptime_seconds": uptime,
-        "queue_size": audio_queue.qsize(),
-        "total_files": len(files),
-        "stats": session_stats
-    })
-
-@app.route("/logs")
-def get_logs():
-    limit = request.args.get('limit', type=int)
-    
-    with log_lock:
-        logs = log_buffer if not limit else log_buffer[-limit:]
-        return jsonify({
-            "logs": logs,
-            "count": len(logs)
-        })
-
-@app.route("/files")
-def list_files():
-    files = []
-    for f in sorted(os.listdir(SAVE_PATH), reverse=True):
-        if f.endswith('.wav'):
-            filepath = os.path.join(SAVE_PATH, f)
-            stat = os.stat(filepath)
-            
-            risk_match = re.search(r'risk(\d+)', f)
-            risk_score = int(risk_match.group(1)) if risk_match else 0
-            
-            files.append({
-                "filename": f,
-                "risk_score": risk_score,
-                "size_kb": round(stat.st_size / 1024, 2),
-                "created": datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-            })
-    
-    return jsonify({
-        "files": files,
-        "count": len(files)
-    })
-
-@app.route("/audio/<path:filename>")
-def get_audio(filename):
-    return send_from_directory(SAVE_PATH, os.path.basename(filename))
-
-@app.route("/stats")
-def stats():
-    with log_lock:
-        suspicious = [l for l in log_buffer if l['type'] == 'suspicious']
-        
-        keyword_counts = defaultdict(int)
-        for log in suspicious:
-            for kw in log.get('metadata', {}).get('keywords', []):
-                keyword_counts[kw] += 1
-        
-        top_keywords = sorted(keyword_counts.items(), key=lambda x: x[1], reverse=True)[:10]
-        
-        return jsonify({
-            "total_logs": len(log_buffer),
-            "suspicious_count": len(suspicious),
-            "session": session_stats,
-            "top_keywords": [{"word": k, "count": c} for k, c in top_keywords],
-            "recent_speech": list(speech_history)[-10:]
-        })
-
-@app.route("/recent")
-def recent():
-    """Get recent detections"""
-    recent = list(speech_history)[-10:]
-    return jsonify({
-        "recent": recent,
-        "count": len(recent)
-    })
-
-@app.route("/control/<action>", methods=['POST'])
-def control(action):
-    if action == "stop":
-        is_running.clear()
-        return jsonify({"status": "stopping"})
-    
-    elif action == "start":
-        if not is_running.is_set():
-            is_running.set()
-            return jsonify({"status": "starting"})
-        return jsonify({"status": "already running"})
-    
-    elif action == "cleanup":
-        count = 0
-        for f in glob.glob(os.path.join(SAVE_PATH, "*.wav")):
-            try:
-                os.remove(f)
-                count += 1
-            except:
-                pass
-        return jsonify({"status": "cleanup complete", "removed": count})
-    
-    elif action == "reset":
-        speech_history.clear()
-        session_stats.update({
-            "total_speech": 0,
-            "suspicious_events": 0,
-            "critical_events": 0
-        })
-        return jsonify({"status": "reset complete"})
-    
-    return jsonify({"error": "Invalid action"}), 400
-
-@app.route("/health")
-def health():
-    return jsonify({
-        "status": "healthy" if is_running.is_set() else "stopped",
-        "timestamp": datetime.datetime.now().isoformat()
-    })
+# ---------------- STATS DISPLAY ----------------
+def display_stats():
+    """Display periodic statistics"""
+    while is_running.is_set():
+        time.sleep(30)  # Every 30 seconds
 
 # ---------------- MAIN ----------------
 if __name__ == "__main__":
-    print("=" * 60)
-    print("🚀 HIGH-SPEED VOICE PROCTORING SYSTEM")
-    print("=" * 60)
-    print()
-    print("⚡ Speed Optimizations:")
-    print("   • 2-second chunks (fast response)")
-    print("   • Minimal processing overhead")
-    print("   • Streamlined detection")
-    print("   • Optimized thresholds")
+    print("Voice Proctor System")
+    print(f"Audio: {SAVE_PATH}")
+    print(f"Logs: {LOG_FILE}")
     print()
     
     # Load existing logs
@@ -449,46 +310,42 @@ if __name__ == "__main__":
         except:
             pass
     
-    log_event("system", "High-Speed Voice Proctor starting")
+    log_event("system", "System starting")
+    
+    print("Starting...")
+    print()
     
     # Start threads
     recording_thread = threading.Thread(target=recorder_thread, daemon=True)
     processing_thread = threading.Thread(target=processor_thread, daemon=True)
+    stats_thread = threading.Thread(target=display_stats, daemon=True)
     
     try:
         recording_thread.start()
         processing_thread.start()
+        stats_thread.start()
         
-        print("✅ System ready!")
-        print("🌐 API: http://0.0.0.0:5000")
-        print()
-        print("📍 Quick Endpoints:")
-        print("   • GET  /status   - System status")
-        print("   • GET  /stats    - Statistics")
-        print("   • GET  /recent   - Recent detections")
-        print("   • GET  /logs     - All logs")
-        print("   • GET  /files    - Audio files")
-        print("   • POST /control/<action> - Control")
-        print()
-        print("=" * 60)
+        print("Listening...")
         print()
         
-        app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)
+        # Keep main thread alive
+        while is_running.is_set():
+            time.sleep(1)
         
     except KeyboardInterrupt:
-        print("\n⚠️  Shutting down...")
+        print("\nStopping...")
+    except Exception as e:
+        print(f"Error: {e}")
     finally:
-        print("\n🛑 Stopping...")
         is_running.clear()
-        time.sleep(1)
+        time.sleep(2)
         
-        # Save logs
+        # Save final logs
         try:
             with open(LOG_FILE, 'w') as f:
-                json.dump(log_buffer, f)
+                json.dump(log_buffer, f, indent=2)
         except:
             pass
         
         log_event("system", "System stopped")
-        print("✅ Shutdown complete")
-        print("=" * 60)
+        print("Stopped")
