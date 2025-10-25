@@ -176,7 +176,22 @@ export default function StudentExam() {
   const handleSubmitExam = () => { /* ... */ if (Object.keys(answers).length !== examQuestions.length) { alert('Answer all questions.'); return; } let score = 0; examQuestions.forEach(q => { if (answers[q.id] === q.correct) score++; }); alert(`Submitted! Score: ${score} / ${examQuestions.length}`); };
 
   const styles = { /* ... styles ... */ 
-      appBackground: { minHeight: '100vh', background: 'linear-gradient(135deg, #a8c0ff 0%, #3f63c8 100%)', fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", padding: '40px' },
+      appBackground: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      margin: 0,
+      padding: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #a8c0ff 0%, #3f63c8 100%)',
+      fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+      boxSizing: 'border-box',
+      overflow: 'hidden', // prevents scrollbars due to minor layout issues
+    },
       examContainer: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '30px', maxWidth: '1400px', margin: '0 auto' },
       questionsList: { backgroundColor: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(10px)', borderRadius: '20px', padding: '30px', maxHeight: 'calc(100vh - 80px)', overflowY: 'auto' },
       proctoringColumn: {},

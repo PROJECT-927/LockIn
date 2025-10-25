@@ -323,7 +323,22 @@ const AdminDashboard = () => {
 // --- Styles & GlobalStyles (Keep the createStyles function and GlobalStyles component) ---
 function createStyles() { /* ... Paste ALL styles from previous step ... */ 
   return {
-    appBackground: { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg, #a8c0ff 0%, #3f63c8 100%)', fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif", padding: '40px', boxSizing: 'border-box' },
+    appBackground: {
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      margin: 0,
+      padding: 0,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'linear-gradient(135deg, #a8c0ff 0%, #3f63c8 100%)',
+      fontFamily: "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+      boxSizing: 'border-box',
+      overflow: 'hidden', // prevents scrollbars due to minor layout issues
+    },
     dashboardCard: { width: '1200px', height: '800px', maxWidth: '100%', maxHeight: '100%', borderRadius: '25px', backgroundColor: 'rgba(255, 255, 255, 0.95)', boxShadow: '0 10px 40px rgba(0, 0, 0, 0.1), 0 0 50px rgba(168, 192, 255, 0.3)', backdropFilter: 'blur(10px)', display: 'grid', gridTemplateColumns: '220px 1fr', overflow: 'hidden', position: 'relative' },
     sidebar: { padding: '25px 0', borderRight: '1px solid #eee', backgroundColor: 'white', display: 'flex', flexDirection: 'column' },
     logo: { fontSize: '24px', fontWeight: '700', color: '#333366', padding: '0 25px 30px 25px' },
