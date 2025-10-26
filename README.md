@@ -72,8 +72,8 @@ Start the application:
 
 ```bash
 python server.py
-The server will be running on http://0.0.0.0:8000, ready to accept SocketIO connections.
 ```
+The server will be running on http://0.0.0.0:8000, ready to accept SocketIO connections.
 
 3. Running the Frontend (Client Side) 🔑
 The frontend client applications (Student Exam Interface and Admin Dashboard) are expected to be available as separate HTML/JS files (exam.html and admin.html).
