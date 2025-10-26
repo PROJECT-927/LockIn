@@ -72,40 +72,54 @@ Start the application:
 
 ```bash
 python server.py
+The server will be running on http://0.0.0.0:8000, ready to accept SocketIO connections.
 ```
 
-The server will be running on **http://0.0.0.0:8000**, ready to accept SocketIO connections.
+3. Running the Frontend (Client Side) 🔑
+The frontend client applications (Student Exam Interface and Admin Dashboard) are expected to be available as separate HTML/JS files (exam.html and admin.html).
 
----
-
-### 3. Running the Frontend (Client Side) 🔑
-
-The frontend client applications (**Student Exam Interface** and **Admin Dashboard**) are expected to be available as separate HTML/JS files (`exam.html` and `admin.html`).
-
-#### A. Student Client (e.g., `exam.html`)
-
+A. Student Client (e.g., exam.html)
 Access the student interface by opening the file directly in a modern web browser.
 
-**Login Credentials:**
-```
+Login Credentials:
+
+```yaml
 Student ID: student@test.com
 Password: password
 ```
 
-**Connection:**  
-The client establishes a SocketIO connection to `http://localhost:8000` and immediately starts streaming video frames.
+Connection:
+The client establishes a SocketIO connection to http://localhost:8000 and immediately starts streaming video frames.
 
----
-
-#### B. Admin Dashboard (e.g., `admin.html`)
-
+B. Admin Dashboard (e.g., admin.html)
 Access the admin interface by opening the file directly in a modern web browser.
 
-**Login Credentials:**
-```
+Login Credentials:
+
+```pgsql
 Admin ID: admin@lockin.com
 Password: password
 ```
 
-**Connection:**  
-The admin client connects to `http://localhost:8000` to receive real-time updates and execute control actions (**Kickout**, **Set Questions**).
+Connection:
+The admin client connects to http://localhost:8000 to receive real-time updates and execute control actions (Kickout, Set Questions).
+
+4. Manual Question Entry (Developer Console Hack)
+If the exam questions are not visible on the student interface:
+
+Open the browser Developer Console.
+
+Navigate to the Applications tab.
+
+Locate the Local Storage section.
+
+Enter the questions manually as a key-value pair.
+
+Example:
+
+```css
+Key: hackathonExam
+Value: [{"id":1,"text":"What is 2+2?","options":["3","4","5","6"],"correct":1},{"id":2,"text":"Capital of France?","options":["London","Paris","Berlin","Rome"],"correct":1}]
+```
+
+This will load the questions into the exam interface directly.
