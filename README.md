@@ -89,7 +89,7 @@ Access the student interface by opening the file directly in a modern web browse
 **Login Credentials:**
 ```
 Student ID: student@test.com
-Password: 123456
+Password: password
 ```
 
 **Connection:**  
@@ -104,7 +104,7 @@ Access the admin interface by opening the file directly in a modern web browser.
 **Login Credentials:**
 ```
 Admin ID: admin@lockin.com
-Password: lockin123
+Password: password
 ```
 
 **Connection:**  
